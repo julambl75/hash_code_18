@@ -37,8 +37,8 @@ public class Parser {
       int r1 = scanner.nextInt();
       int c2 = scanner.nextInt();
       int r2 = scanner.nextInt();
-      Location startLocation = new Location(c1, r1);
-      Location finishLocation = new Location(c2, r2);
+      Location startLocation = new Location(r1, c1);
+      Location finishLocation = new Location(r2, c2);
 
       int earliestStartTime = scanner.nextInt();
       int latestFinishTime = scanner.nextInt();

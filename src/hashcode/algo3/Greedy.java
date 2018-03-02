@@ -1,6 +1,7 @@
 package hashcode.algo3;
 
 import hashcode.City;
+import hashcode.Location;
 import hashcode.Ride;
 import hashcode.RideAssignment;
 import hashcode.Vehicle;
@@ -12,12 +13,24 @@ import java.util.PriorityQueue;
 
 public class Greedy {
 
+  private static int numC;
+  private static int numR;
+  private static int buckets = 10;
   private static int perRideBonus;
   private static int maxSteps;
 
+  // Precomputed
+  private static Location center;
+  private static int iqr;
+  private static float[][] rideDensity;
+
   public static RideAssignment solution(City city) {
+    numC = city.getCols();
+    numR = city.getRows();
     perRideBonus = city.getPerRideBonus();
     maxSteps = city.getMaxSteps();
+
+    precalculate(city);
 
     // Sort ride list by earliest start time ascending
     List<Ride> rides = new ArrayList<>(city.getRideList());
@@ -42,6 +55,64 @@ public class Greedy {
     }
 
     return rideAssignment;
+  }
+
+  private static void precalculate(City city) {
+    List<Ride> rideList = city.getRideList();
+    long sumC = 0;
+    long sumR = 0;
+    for (Ride ride : rideList) {
+      sumC += ride.getStartLocation().getC();
+      sumC += ride.getFinishLocation().getR();
+      sumR += ride.getStartLocation().getC();
+      sumR += ride.getFinishLocation().getR();
+    }
+    int avgC = (int) (sumC / (rideList.size() * 2));
+    int avgR = (int) (sumR / (rideList.size() * 2));
+    //System.out.println("c " + avgC);
+    //System.out.println("r " + avgR);
+
+    // Sort ride list by c ascending
+    List<Ride> csorted = new ArrayList<>(rideList);
+    csorted.sort((r1, r2) -> Integer.compare(r1.getStartLocation().getC(), r2.getStartLocation().getC()));
+
+    // Sort ride list by r ascending
+    List<Ride> rsorted = new ArrayList<>(rideList);
+    rsorted.sort((r1, r2) -> Integer.compare(r1.getStartLocation().getR(), r2.getStartLocation().getR()));
+
+    //System.out.println("cm " + csorted.get(csorted.size() / 2).getStartLocation().getC());
+    //System.out.println("rm " + rsorted.get(rsorted.size() / 2).getStartLocation().getR());
+
+    //System.out.println("iqr " + (rsorted.get((rsorted.size() * 3) / 4).getStartLocation().getR() - rsorted.get(rsorted.size() / 4).getStartLocation().getR()));
+    int cm = csorted.get(csorted.size() / 2).getStartLocation().getC();
+    int rm = csorted.get(csorted.size() / 2).getStartLocation().getR();
+    center = new Location(cm, rm);
+    iqr = rsorted.get((rsorted.size() * 3) / 4).getStartLocation().getR() - rsorted.get(rsorted.size() / 4).getStartLocation().getR();
+
+    int[][] rideDensityCount = new int[buckets][buckets];
+    int maxCount = 0;
+    for (Ride ride : rideList) {
+      Location startLocation = ride.getStartLocation();
+      int cb = (int) (((float) startLocation.getC() / city.getCols()) * buckets);
+      int rb = (int) (((float) startLocation.getR() / city.getRows()) * buckets);
+      rideDensityCount[cb][rb]++;
+      if (rideDensityCount[cb][rb] > maxCount) {
+        maxCount = rideDensityCount[cb][rb];
+      }
+    }
+
+    rideDensity = new float[buckets][buckets];
+    for (int c = 0; c < buckets; c++) {
+      for (int r = 0; r < buckets; r++) {
+        rideDensity[c][r] = (float) rideDensityCount[c][r] / maxCount;
+      }
+    }
+  }
+
+  private static float getRideDensity(Location location) {
+    int cb = (int) (((float) location.getC() / numC) * buckets);
+    int rb = (int) (((float) location.getR() / numR) * buckets);
+    return rideDensity[cb][rb];
   }
 
   private static void removeLateRides(List<Ride> rides, int step) {
@@ -110,7 +181,13 @@ public class Greedy {
     int bonus = rideGetBonus(ride, vehicle, step);
     int waitTime = Integer.max(timeUntilStart, distanceToRideStart);
 
-    return (int) (Integer.MAX_VALUE * (Math.pow((float) (ride.getDistance() + bonus), 2f/3) / (waitTime + ride.getDistance())));
+    float rd = getRideDensity(ride.getFinishLocation());
+
+//    return (int) (Integer.MAX_VALUE * (Math.pow((float) (ride.getDistance() + bonus), 2f/3) /
+//        (waitTime + ride.getDistance() + Math.sqrt(ride.getFinishLocation().distanceTo(center)))));
+
+    return (int) (Integer.MAX_VALUE * (float) (ride.getDistance() + bonus) /
+          (waitTime + ride.getDistance() + Math.log(ride.getFinishLocation().distanceTo(center)) * Math.exp(rd)));
   }
 
   private static int rideGetBonus(Ride ride, Vehicle vehicle, int step) {
