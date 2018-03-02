@@ -21,10 +21,10 @@ public class Solution {
 
   public static void main(String[] args) {
     List<String> filenames = new ArrayList<>();
-    filenames.add("input_data/a_example");
-    filenames.add("input_data/b_should_be_easy");
+    //filenames.add("input_data/a_example");
+    //filenames.add("input_data/b_should_be_easy");
     filenames.add("input_data/c_no_hurry");
-    filenames.add("input_data/d_metropolis");
+    //filenames.add("input_data/d_metropolis");
     filenames.add("input_data/e_high_bonus");
 
     for (String filename : filenames) {
@@ -36,7 +36,7 @@ public class Solution {
 
   private static void generateSolution(String filename) {
     City city = Parser.parseCity(filename + INPUT_EXT);
-    RideAssignment assignment =  hashcode.algo3.Greedy.solution(city);
+    RideAssignment assignment =  hashcode.algo3.Greedy.randomSolution(city);
 
     String solution = assignment.getSolution();
 

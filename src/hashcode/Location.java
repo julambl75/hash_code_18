@@ -7,9 +7,9 @@ public class Location {
   private int c;
   private int r;
 
-  public Location(int x, int y) {
-    this.c = x;
-    this.r = y;
+  public Location(int c, int r) {
+    this.c = c;
+    this.r = r;
   }
 
   public static int calculateDistance(Location start, Location finish) {

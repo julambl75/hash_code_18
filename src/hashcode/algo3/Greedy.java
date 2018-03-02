@@ -15,20 +15,40 @@ public class Greedy {
 
   private static int numC;
   private static int numR;
+  private static int stepBuckets = 10;
   private static int buckets = 10;
   private static int perRideBonus;
   private static int maxSteps;
+  private static List<Vehicle> vehicles;
+  private static int numRides;
 
   // Precomputed
   private static Location center;
   private static int iqr;
-  private static float[][] rideDensity;
+  private static float[][][] rideDensity;
+
+  public static RideAssignment randomSolution(City city) {
+    RideAssignment bestRideAssignment = null;
+
+    for (int i = 0; i < 10; i++) {
+      RideAssignment rideAssignment = solution(city);
+      System.out.println(rideAssignment.getScore());
+      if (bestRideAssignment == null
+          || rideAssignment.getScore() > bestRideAssignment.getScore()) {
+        bestRideAssignment = rideAssignment;
+      }
+    }
+
+    return bestRideAssignment;
+  }
 
   public static RideAssignment solution(City city) {
     numC = city.getCols();
     numR = city.getRows();
     perRideBonus = city.getPerRideBonus();
     maxSteps = city.getMaxSteps();
+    vehicles = city.getVehicleList();
+    numRides = city.getRideList().size();
 
     precalculate(city);
 
@@ -89,30 +109,47 @@ public class Greedy {
     center = new Location(cm, rm);
     iqr = rsorted.get((rsorted.size() * 3) / 4).getStartLocation().getR() - rsorted.get(rsorted.size() / 4).getStartLocation().getR();
 
-    int[][] rideDensityCount = new int[buckets][buckets];
-    int maxCount = 0;
+
+    int[][][] rideDensityCount = new int[stepBuckets][buckets][buckets];
+    int[] maxCount = new int[stepBuckets];
     for (Ride ride : rideList) {
       Location startLocation = ride.getStartLocation();
+      int sb = (int) (((float) ride.getLatestStartTime() / maxSteps) * stepBuckets);
       int cb = (int) (((float) startLocation.getC() / city.getCols()) * buckets);
       int rb = (int) (((float) startLocation.getR() / city.getRows()) * buckets);
-      rideDensityCount[cb][rb]++;
-      if (rideDensityCount[cb][rb] > maxCount) {
-        maxCount = rideDensityCount[cb][rb];
+      rideDensityCount[sb][cb][rb]++;
+      if (rideDensityCount[sb][cb][rb] > maxCount[sb]) {
+        maxCount[sb] = rideDensityCount[sb][cb][rb];
       }
     }
 
-    rideDensity = new float[buckets][buckets];
-    for (int c = 0; c < buckets; c++) {
-      for (int r = 0; r < buckets; r++) {
-        rideDensity[c][r] = (float) rideDensityCount[c][r] / maxCount;
+    rideDensity = new float[stepBuckets][buckets][buckets];
+    for (int s = 0; s < stepBuckets; s++) {
+      for (int c = 0; c < buckets; c++) {
+        for (int r = 0; r < buckets; r++) {
+          rideDensity[s][c][r] = (float) rideDensityCount[s][c][r] / maxCount[s];
+        }
       }
     }
   }
 
-  private static float getRideDensity(Location location) {
+  private static Location vehicleMedian() {
+    List<Vehicle> csorted = new ArrayList<>(vehicles);
+    csorted.sort((v1, v2) -> Integer.compare(v1.getLocation().getC(), v2.getLocation().getC()));
+
+    List<Vehicle> rsorted = new ArrayList<>(vehicles);
+    rsorted.sort((v1, v2) -> Integer.compare(v1.getLocation().getC(), v2.getLocation().getC()));
+
+    int mc = csorted.get(csorted.size() / 2).getLocation().getC();
+    int mr = rsorted.get(rsorted.size() / 2).getLocation().getR();
+    return new Location(mc, mr);
+  }
+
+  private static float getRideDensity(int step, Location location) {
+    int sb = (int) ((float) step / maxSteps * stepBuckets);
     int cb = (int) (((float) location.getC() / numC) * buckets);
     int rb = (int) (((float) location.getR() / numR) * buckets);
-    return rideDensity[cb][rb];
+    return rideDensity[sb][cb][rb];
   }
 
   private static void removeLateRides(List<Ride> rides, int step) {
@@ -144,6 +181,15 @@ public class Greedy {
   private static void assignRides(RideAssignment rideAssignment,
       PriorityQueue<VehicleTimePair> activeRides,
       ArrayDeque<Vehicle> idleVehicles, List<Ride> rides, int step) {
+
+    Location vehicleMedian = vehicleMedian();
+    List<Vehicle> temp = new ArrayList<>(idleVehicles);
+    temp.sort((v1, v2) -> Integer.compare(v1.getLocation().distanceTo(vehicleMedian), v2.getLocation().distanceTo(vehicleMedian)));
+    idleVehicles.clear();
+    for (Vehicle vehicle : temp) {
+      idleVehicles.add(vehicle);
+    }
+
     Iterator<Vehicle> it = idleVehicles.iterator();
     while (it.hasNext()) {
       Vehicle vehicle = it.next();
@@ -181,13 +227,12 @@ public class Greedy {
     int bonus = rideGetBonus(ride, vehicle, step);
     int waitTime = Integer.max(timeUntilStart, distanceToRideStart);
 
-    float rd = getRideDensity(ride.getFinishLocation());
+    float rd = getRideDensity(step, ride.getFinishLocation());
 
-//    return (int) (Integer.MAX_VALUE * (Math.pow((float) (ride.getDistance() + bonus), 2f/3) /
-//        (waitTime + ride.getDistance() + Math.sqrt(ride.getFinishLocation().distanceTo(center)))));
+    float rand = 1 + (float) (0.5f - Math.random()) / 10f;
 
-    return (int) (Integer.MAX_VALUE * (float) (ride.getDistance() + bonus) /
-          (waitTime + ride.getDistance() + Math.log(ride.getFinishLocation().distanceTo(center)) * Math.exp(rd)));
+    return (int) (rand * Integer.MAX_VALUE * ((Math.pow((float) (ride.getDistance() + bonus), 2f/3)) /
+        (waitTime + ride.getDistance() + Math.sqrt(ride.getFinishLocation().distanceTo(center)))));
   }
 
   private static int rideGetBonus(Ride ride, Vehicle vehicle, int step) {
