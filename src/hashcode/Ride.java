@@ -53,4 +53,8 @@ public class Ride {
         ", latestFinishTime=" + latestFinishTime +
         "}\n";
   }
+
+  public int getLatestStartTime() {
+    return getLatestFinishTime() - getDistance();
+  }
 }

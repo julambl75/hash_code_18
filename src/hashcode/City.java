@@ -8,12 +8,12 @@ public class City {
   private final int rows;
   private final int cols;
   private final int perRideBonus;
-  private final long maxSteps;
+  private final int maxSteps;
   private final List<Vehicle> vehicleList;
-  private final List<Ride> rideList;
+  private final ArrayList<Ride> rideList;
 
   public City(int rows, int cols, int perRideBonus, int maxSteps,
-      int numVehicles, List<Ride> rideList) {
+      int numVehicles, ArrayList<Ride> rideList) {
     this.rows = rows;
     this.cols = cols;
     this.perRideBonus = perRideBonus;
@@ -50,7 +50,7 @@ public class City {
     return rideList;
   }
 
-  public long getMaxSteps() {
+  public int getMaxSteps() {
     return maxSteps;
   }
 

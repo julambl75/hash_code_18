@@ -36,13 +36,9 @@ public class Solution {
 
   private static void generateSolution(String filename) {
     City city = Parser.parseCity(filename + INPUT_EXT);
-    //RideAssignment assignment = Greedy.randomGreedySolution(city);
-    //RideAssignment assignment = Greedy.greedySolution(city);
-    TraverseRides traverseRides = new TraverseRides(city);
-    RideAssignment assignment = traverseRides.getRideAssignment();
+    RideAssignment assignment =  hashcode.algo3.Greedy.solution(city);
 
     String solution = assignment.getSolution();
-    System.out.println(solution);
 
     int score = assignment.getScore();
     scoreSum += score;

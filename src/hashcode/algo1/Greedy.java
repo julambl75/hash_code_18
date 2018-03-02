@@ -27,11 +27,6 @@ public class Greedy {
     }
   }
 
-  public static void main(String[] args) {
-    City city = Parser.parseCity("input_data/a_example.in");
-    greedySolution(city);
-  }
-
   public static RideAssignment randomGreedySolution(City city) {
     RideAssignment bestRideAssignment = null;
 

@@ -22,7 +22,7 @@ public class Parser {
       int numRides = scanner.nextInt();
       int perRideBonus = scanner.nextInt();
       int maxSteps = scanner.nextInt();
-      List<Ride> rides = parseRides(scanner, numRides);
+      ArrayList<Ride> rides = parseRides(scanner, numRides);
 
       return new City(rows, cols, perRideBonus, maxSteps, numVehicles, rides);
     } catch (FileNotFoundException e) {
@@ -30,8 +30,8 @@ public class Parser {
     }
   }
 
-  private static List<Ride> parseRides(Scanner scanner, int numRides) {
-    List<Ride> rides = new ArrayList<>();
+  private static ArrayList<Ride> parseRides(Scanner scanner, int numRides) {
+    ArrayList<Ride> rides = new ArrayList<>();
     for (int i = 0; i < numRides; i++) {
       int c1 = scanner.nextInt();
       int r1 = scanner.nextInt();
